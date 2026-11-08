@@ -49,6 +49,29 @@ def _checked_threshold_sweep(details, options, location):
     return checked
 
 
+def _gpt_candidate_views(sample, details, options):
+    """Choose best views using scored images before asking the judge anything."""
+    metric = options.get("best_view_metric", "LPIPS")
+    selected = {}
+    for name, result in sample["methods"].items():
+        candidates = sorted(details[name]["input_view"]["candidates"], key=lambda view: view["id"])
+        fixed_id = sample["camera_sampling"].get("anchor_view_id")
+        if fixed_id is None and len(candidates) == 1:
+            fixed_id = candidates[0]["id"]
+        fixed = next((view for view in candidates if view["id"] == fixed_id), None)
+        if fixed is None:
+            raise EvaluationError("GPT fixed view is missing from the scored candidate cameras")
+        choose = min if metric == "LPIPS" else max
+        best = choose(candidates, key=lambda view: view["scores"][metric])
+        selected[name] = {
+            "fixed": {"id": fixed["id"], "render": result["foreground_render"], "camera": fixed["camera"]},
+            "best": {"id": best["id"], "render": best["render"], "camera": best["camera"],
+                     "selection_metric": metric, "selection_score": best["scores"][metric],
+                     "candidate_count": len(candidates)},
+        }
+    return selected
+
+
 def evaluate(config: dict) -> dict:
     from .preparation import prepare_evaluation
     try:
@@ -107,7 +130,23 @@ def evaluate(config: dict) -> dict:
         if categories["gpt_evaluation"]["enabled"]:
             loc = f"sample {sample_id!r}, gpt_evaluation"
             try:
-                if config.get("foreground", {}).get("enabled"):
+                gpt_options = categories["gpt_evaluation"]["options"]
+                if gpt_options.get("view_selection", "fixed") == "fixed_and_best":
+                    candidate_views = _gpt_candidate_views(sample, details, gpt_options)
+                    values = evaluate_gpt(
+                        sample["foreground_reference"],
+                        {name: result["foreground_render"] for name, result in sample["methods"].items()},
+                        gpt_options, candidate_views=candidate_views,
+                    )
+                    for name, views in candidate_views.items():
+                        details[name]["gpt_input_views"] = {
+                            "presentation": "single_group_fixed_and_best",
+                            "fixed_view_id": views["fixed"]["id"], "best_view_id": views["best"]["id"],
+                            "best_view_metric": views["best"]["selection_metric"],
+                            "best_view_score": views["best"]["selection_score"],
+                            "candidate_count": views["best"]["candidate_count"],
+                        }
+                elif config.get("foreground", {}).get("enabled"):
                     values = evaluate_gpt(
                         sample["foreground_reference"],
                         {name: result["foreground_render"] for name, result in sample["methods"].items()},

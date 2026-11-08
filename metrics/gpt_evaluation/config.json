@@ -6,7 +6,9 @@
         "env_file": "../../.env",
         "prompt_file": "prompt.txt",
         "order_seed": 0,
-        "image_detail": "high"
+        "image_detail": "high",
+        "view_selection": "fixed_and_best",
+        "best_view_metric": "LPIPS"
       }
     }
   }

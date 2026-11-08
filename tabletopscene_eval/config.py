@@ -81,12 +81,24 @@ def load_config(filename):
             else:
                 from metrics.gpt_evaluation import validate_options
                 validate_options(options)
+                options.setdefault("view_selection", "fixed")
+                if options["view_selection"] == "fixed_and_best":
+                    options.setdefault("best_view_metric", "LPIPS")
                 for field in ("env_file", "prompt_file"):
                     if options.get(field) and (enabled or field == "prompt_file"):
                         options[field] = str(_path(options[field], path.parent, f"gpt_evaluation.{field}"))
                 if options.get("audit_dir"):
                     options["audit_dir"] = str((path.parent / Path(options["audit_dir"]).expanduser()).resolve())
             categories[name] = category
+        gpt = categories["gpt_evaluation"]
+        if gpt["enabled"] and gpt["options"]["view_selection"] == "fixed_and_best":
+            image = categories["input_view"]
+            if not foreground["enabled"] or not foreground["include_table"]:
+                raise ConfigError("GPT fixed_and_best requires foreground.enabled and include_table=true for visible support")
+            if not image["enabled"] or image["view_selection"] == "fixed":
+                raise ConfigError("GPT fixed_and_best requires scored input_view candidates (best_per_metric or mean)")
+            if gpt["options"]["best_view_metric"] not in image["metrics"]:
+                raise ConfigError("GPT best_view_metric must be included in input_view.metrics")
         if not any(c["enabled"] for c in categories.values()):
             raise ConfigError("Enable at least one metric category")
         visual = categories["input_view"]["enabled"] or categories["gpt_evaluation"]["enabled"]

@@ -18,7 +18,7 @@
 
 Blender 使用源 GLB 材质，Cycles 32 samples、降噪、白色 World 强度 0.6、三盏 AREA 灯 400/200/100 W（size=3 m），颜色管理 AgX / look=None / exposure=0 / gamma=1。渲染无仿真步，实际设备、相机、灯光、资产哈希和位姿检查留存于产物。
 
-参考 mask 在所有方法间共享；预测 mask 来自各自渲染的可见对象 `IndexOB` pass。默认包含桌子和对象；设置 `foreground.include_table=false` 时参考 mask 也须排除桌子，但桌子仍参与遮挡。每张图各用自己的 mask 合成统一白底，不裁剪、居中或独立缩放，因此保留额外对象及错位。标准图像指标作用于合成后的完整画布，并非把特征距离逐像素按 mask 归一化。
+参考 mask 在所有方法间共享；预测 mask 来自各自渲染的可见对象 `IndexOB` pass。默认包含桌子和对象，供 GPT 同时判断支撑关系。仅在其它显式协议中设置 `foreground.include_table=false` 时，参考 mask 也须排除桌子，但桌子仍参与遮挡；该设置不适用于当前 GPT `fixed_and_best` 模式。每张图各用自己的 mask 合成统一白底，不裁剪、居中或独立缩放，因此保留额外对象及错位。标准图像指标作用于合成后的完整画布，并非把特征距离逐像素按 mask 归一化。
 
 `--auto-mask` 只合并输入分析中已有的实例 mask，跳过 subscene 并尊重桌子选项。要求分割原图与共享参考图 SHA256 一致；记录自动来源，不当作人工 GT。
 
@@ -34,7 +34,7 @@ Blender 使用源 GLB 材质，Cycles 32 samples、降噪、白色 World 强度 
 
 DINOv2 processor 将短边 resize 到 256，再中心裁剪 224×224，使用 ImageNet 归一化；CLIP 短边 resize 到 224、中心裁剪 224×224，使用 CLIP 归一化。中心裁剪可能丢失边缘物体。LPIPS 默认要求参考与渲染同尺寸，只有显式 `image_size` 才同时缩放双方。模型 revision 和实际 processor 写入结果。
 
-每个场景、每个方法分别从 16 个共同候选取 LPIPS 最小值、DINOv2 最大值、CLIP 最大值，三项允许选择不同图片；随后对场景等权平均。GPT 不读取这三项各自的最佳图，只使用预先固定的 anchor。
+每个场景、每个方法分别从 16 个共同候选取 LPIPS 最小值、DINOv2 最大值、CLIP 最大值，三项允许选择不同图片；随后对场景等权平均。GPT 默认另按一个预先配置的 `best_view_metric` 选择 best，并与固定 anchor 一起展示，不把三项各自最佳图全部发送。
 
 实现与配置分别位于 `metrics/lpips/`、`metrics/dinov2/`、`metrics/clip/`。底层模型来源：[LPIPS](https://github.com/richzhang/PerceptualSimilarity)、[DINOv2](https://github.com/facebookresearch/dinov2)、[CLIP](https://github.com/openai/CLIP)。
 
@@ -44,9 +44,9 @@ DINOv2 processor 将短边 resize 到 256，再中心裁剪 224×224，使用 Im
 
 | 项目 | 含义 |
 | --- | --- |
-| VF | 可见形状、材质/纹理与渲染缺陷 |
-| IA | 相对输入的类别、数量、尺寸、姿态、布局与外观一致性 |
-| PP | 从图像判断可见支撑、接触、漂浮或穿插；不推测隐藏几何或动力学 |
+| VF | 综合固定图与 best 图，判断可见形状、材质/纹理与渲染缺陷 |
+| IA | 主要依据 best 图，对比输入的类别、数量、尺寸、姿态、布局与外观一致性 |
+| PP | 综合两图判断可见支撑、接触、漂浮或穿插；不推测隐藏几何或动力学 |
 | Avg. | 本地计算 `(VF + IA + PP) / 3` |
 | OR | 多方法时模型直接给出的整体排名，1 为最好；不由 Avg. 排序生成 |
 
@@ -54,11 +54,30 @@ VF/IA/PP 取 1–7 分，允许小数；prompt 给出 1、4、7 的锚点，中�
 
 **单方法仍评 VF/IA/PP 和 Avg.，OR 必须为整数 1，只有占位约定，没有方法间比较意义。** prompt 明确禁止编造额外候选；审计记录 `candidate_count=1`、`ranking_comparative=false`。
 
-前景模式提供两组图片：A 组参考前景和候选前景用于 VF/IA；B 组对应原图和原始渲染仅用于 PP，保留桌面与支撑上下文。模型只看图片，不接收网格、FCL 结果或图像指标。PP 不能证明隐藏部分不存在碰撞，也不能代替物理检测。
+当前默认使用**统一视觉归一化后的单组前景图，保留桌子**：
+
+1. 参考前景图只发送一次。
+2. 每个方法发送固定图：`e01_a00_d00`，0° 方位角／35° 光轴仰角。
+3. 同一方法再发送 best 图：从相同 16 个候选中，按实验前配置的单一图像指标选择。
+
+总图数为 `1+2M`，其中 M 是方法数；两方法共 5 张，单方法共 3 张。固定与 best 可能选到同一视角，但两张图始终属于同一方法，不作为两个候选重复打分。每方法仅返回一套 VF/IA/PP/Avg. 与一个 OR。
+
+默认设置在 `metrics.gpt_evaluation.options`：
+
+```json
+{
+  "view_selection": "fixed_and_best",
+  "best_view_metric": "LPIPS"
+}
+```
+
+`LPIPS` 取候选最小值；也支持预先指定 `DINOv2` 或 `CLIP` 取最大值。所有方法采用同一个选择指标，不能看到评分后为不同方法切换规则。选择指标、视角 ID 和图片哈希留存在本地审计，**不把选择分数发送给 GPT**，避免数值锚定。IA 主要根据 best 与参考图的对齐；VF/PP 综合固定与 best 的可见证据。模型不读取网格或 FCL 结果，PP 仍不能证明隐藏部分不存在碰撞，也不能代替物理检测。
+
+`fixed_and_best` 要求 `metrics.input_view.enabled=true`，其 `view_selection` 为 `best_per_metric` 或 `mean`，且计算项包含 `best_view_metric`；同时要求 `foreground.enabled=true`、`foreground.include_table=true`。即使图像汇总采用 `mean`，GPT 的 best 仍按该指标的逐候选分数选择。需要旧的单固定图路径时可显式设置 GPT `view_selection="fixed"`；旧的前景／原始支撑双组呈现属于历史协议，不是当前默认。新旧图像呈现或 prompt 的分数必须分开记录。
 
 默认通过 OpenAI 兼容 Chat Completions API，`image_detail=high`、JSON mode；本地严格检查候选、字段、范围和排名。JSON mode 本身不保证业务 schema。实际 prompt、源/请求 prompt 哈希、候选映射、图片哈希、模型、原始响应与用量可留存审计；改 prompt 或模型应重新评测，不能混用旧分数。
 
-指标名称、1–7 量表及整体排名参考 [TabletopGen](https://arxiv.org/html/2512.01204v4#S4.SS1) 和 [ArticuTable](https://arxiv.org/html/2610.05249v1#A4.SS1)。[SceneEval 的公开 prompts](https://github.com/3dlg-hcvc/SceneEval/blob/116881e7945dcf7dbc58f7c64590a4c0b99c5cf5/vlm/prompts.yaml) 与 [SceneSmith critic](https://github.com/nepfaff/scenesmith/blob/67cc408fd38334b4a926efef45e284302ed5055b/scenesmith/prompts/data/furniture_agent/stateful_critic_agent.yaml) 提供了结构化判据的参考；本项目 prompt、图像呈现、归一化和 16 视角协议是独立设计，未声称完整复现论文 judge 或其绝对分数。
+指标名称、1–7 量表及整体排名参考 [TabletopGen](https://arxiv.org/html/2512.01204v4#S4.SS1) 和 [ArticuTable](https://arxiv.org/html/2610.05249v1#A4.SS1)。[SceneEval 的公开 prompts](https://github.com/3dlg-hcvc/SceneEval/blob/116881e7945dcf7dbc58f7c64590a4c0b99c5cf5/vlm/prompts.yaml) 与 [SceneSmith critic](https://github.com/nepfaff/scenesmith/blob/67cc408fd38334b4a926efef45e284302ed5055b/scenesmith/prompts/data/furniture_agent/stateful_critic_agent.yaml) 提供了结构化判据的参考；本项目 prompt、fixed+best 呈现、归一化和 16 视角协议是独立设计，未声称它们是原论文的原版 judge 或复现了论文绝对分数。
 
 ## ColO、ColS 与五档阈值
 

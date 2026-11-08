@@ -75,7 +75,9 @@ metrics/
 
 外层 `configs/` 只组织共享的 `default.json`、`camera.json`、`render.json` 和覆盖示例。使用 `extends` 组合片段；对象递归合并、数组整体替换，路径相对于声明它的配置文件。修改 metric 参数时编辑对应目录的 `config.json`，或从实验配置显式覆盖。
 
-默认视觉协议将各方法桌面中心移至原点、桌径统一为 1，整场景使用同一个等比例变换。所有方法共享 16 个相机（25°/35° × 8 方位角）、Cycles 32 samples 和统一棚拍光照。LPIPS/DINOv2/CLIP 分别选最佳视角；GPT 使用预先固定的 35° anchor。单方法也可评 GPT，**OR=1 仅为约定，没有方法间排名意义**。
+默认视觉协议将各方法桌面中心移至原点、桌径统一为 1，整场景使用同一个等比例变换。所有方法共享 16 个相机（25°/35° × 8 方位角）、Cycles 32 samples 和统一棚拍光照。LPIPS/DINOv2/CLIP 分别选最佳视角。
+
+GPT 默认 `view_selection="fixed_and_best"`：单组前景图保留桌子，发送 1 张参考图，加每方法的固定图（0° 方位角／35° 仰角）与 best 图；best 从相同 16 个候选按预先配置的指标选择，默认 `best_view_metric="LPIPS"` 取最小值，可改 DINOv2/CLIP 取最大值。共 `1+2M` 张图，两方法为 5 张；IA 主要依据 best，VF/PP 综合两图。每方法只返回一套分数与 OR，选图分数不发送给 GPT。单方法也可评，**OR=1 仅为约定，没有方法间排名意义**。详细约束与显式 `fixed` 兼容模式见 [METRICS.md](docs/METRICS.md)。
 
 物理始终使用归一化前的原始网格与初始位姿，排除桌子，不运行仿真。一次分解和深度查询，同时计算 **0、0.1、0.3、0.5、1 mm**；主 ColO/ColS 仍取 1 mm。算法、公式、prompt 来源与限制见 [METRICS.md](docs/METRICS.md)。
 

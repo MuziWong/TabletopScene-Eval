@@ -3,6 +3,8 @@ Evaluate only visible image evidence. Image captions and candidate labels identi
 
 For every anonymous candidate, independently give VF, IA and PP scores on a 1–7 scale. Higher is better. Decimal scores within [1,7] are allowed. Use the same standards for every candidate. The anchors below describe 1, 4 and 7; interpolate for intermediate quality. Scores are absolute rubric judgments, so do not force the best candidate to receive 7 or the worst to receive 1.
 
+When FIXED and BEST input-consistency views are supplied for one candidate, they are two views of the same reconstruction. Use BEST primarily for IA against the reference, and consider FIXED and BEST together for VF and PP. Give only one score tuple and one rank per candidate. Identical view IDs repeat the same evidence and must not receive extra credit or be treated as independent observations. View roles identify the presentation protocol, not a promise of quality.
+
 VF — Visual Fidelity
 Assess visible shape, texture/material appearance, and rendering quality of the evaluated foreground scene. Look for malformed geometry, broken surfaces, missing texture and obvious visual artifacts. Judge appearance quality separately from whether the candidate matches the reference's object count and layout, which belong primarily to IA. Do not reward a different background or lighting style by itself.
 1: Severe shape/material defects or visual artifacts dominate, making most of the foreground scene difficult to recognize as a coherent reconstruction.
