@@ -1,0 +1,23 @@
+{
+  "rendering": {
+    "backend": "blender",
+    "executable": "/snap/bin/blender",
+    "renderer": "CYCLES",
+    "device": "OPTIX",
+    "resolution": "reference",
+    "export_camera_resolution": "reference",
+    "samples": 32,
+    "denoise": true,
+    "threads": 4,
+    "transparent_background": true,
+    "world": {"color": [1, 1, 1], "strength": 0.6},
+    "lights": [
+      {"type": "AREA", "position_y_up_m": [-3, 4, 3], "target_y_up_m": [0, 0.8, 0], "color": [1, 1, 1], "energy": 400, "size": 3},
+      {"type": "AREA", "position_y_up_m": [3, 3, 1], "target_y_up_m": [0, 0.8, 0], "color": [1, 1, 1], "energy": 200, "size": 3},
+      {"type": "AREA", "position_y_up_m": [0, 4, -2], "target_y_up_m": [0, 0.8, 0], "color": [1, 1, 1], "energy": 100, "size": 3}
+    ],
+    "color_management": {"view_transform": "AgX", "look": "None", "exposure": 0, "gamma": 1},
+    "camera": {"near_m": 0.01, "far_m": 100, "vertical_fov_deg": 45},
+    "timeout_seconds": 900
+  }
+}

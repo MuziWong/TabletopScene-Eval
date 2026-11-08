@@ -1,0 +1,7 @@
+{
+  "metrics": {
+    "input_view": {
+      "options": {"lpips_network": "alex"}
+    }
+  }
+}

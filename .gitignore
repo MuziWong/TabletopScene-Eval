@@ -1,0 +1,12 @@
+# Private API credentials; keep only the template under version control.
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+runs/
+evaluation_artifacts/
+*.egg-info/
+build/
+dist/
+.pytest_cache/

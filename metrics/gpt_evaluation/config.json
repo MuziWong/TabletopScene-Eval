@@ -1,0 +1,13 @@
+{
+  "metrics": {
+    "gpt_evaluation": {
+      "enabled": true,
+      "options": {
+        "env_file": "../../.env",
+        "prompt_file": "prompt.txt",
+        "order_seed": 0,
+        "image_detail": "high"
+      }
+    }
+  }
+}

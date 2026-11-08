@@ -1,0 +1,21 @@
+{
+  "camera_sampling": {
+    "mode": "orbit_grid",
+    "elevations_deg": [25, 35],
+    "azimuths_deg": [0, 45, 90, 135, 180, 225, 270, 315],
+    "distance_multipliers": [1.0],
+    "anchor_view_id": "e01_a00_d00",
+    "framing": {
+      "mode": "shared_table_projection",
+      "target_height": "bounds_center",
+      "target_height_offset_m": 0.0,
+      "margin": 1.08
+    }
+  },
+  "metrics": {
+    "input_view": {
+      "view_selection": "best_per_metric",
+      "expected_view_count": 16
+    }
+  }
+}

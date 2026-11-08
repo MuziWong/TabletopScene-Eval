@@ -1,0 +1,24 @@
+{
+  "metrics": {
+    "physical_validity": {
+      "enabled": true,
+      "backend": "vhacd_fcl",
+      "options": {
+        "min_penetration_m": 0.001,
+        "penetration_thresholds_m": [0, 0.0001, 0.0003, 0.0005, 0.001],
+        "numerical_tolerance_m": 1e-9,
+        "decomposition": {
+          "max_convex_hulls": 128,
+          "max_vertices_per_hull": 64,
+          "resolution": 400000,
+          "minimum_volume_percent_error": 1.0,
+          "max_recursion_depth": 10,
+          "shrink_wrap": true,
+          "fill_mode": "flood",
+          "min_edge_length": 2,
+          "find_best_plane": false
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tabletopscene-eval"
+version = "0.1.0"
+description = "Configurable image, GPT and mesh-based collision evaluation of tabletop scenes"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "numpy==1.26.4", "scipy==1.15.3", "Pillow==11.2.1",
+  "torch==2.7.1", "torchvision==0.22.1", "lpips==0.1.4",
+  "transformers==4.51.3", "openai==1.78.1", "python-dotenv==1.2.3",
+  "trimesh==4.6.8", "python-fcl==0.7.0.11", "vhacdx==0.1.1"
+]
+
+[project.scripts]
+tabletopscene-eval = "tabletopscene_eval.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["metrics*", "tabletopscene_eval*"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+"*" = ["config.json", "prompt.txt"]
+
+[tool.setuptools.data-files]
+"share/tabletopscene-eval/configs" = ["configs/*.json"]
+"share/tabletopscene-eval/metrics/lpips" = ["metrics/lpips/config.json"]
+"share/tabletopscene-eval/metrics/dinov2" = ["metrics/dinov2/config.json"]
+"share/tabletopscene-eval/metrics/clip" = ["metrics/clip/config.json"]
+"share/tabletopscene-eval/metrics/physical_validity" = ["metrics/physical_validity/config.json"]
+"share/tabletopscene-eval/metrics/gpt_evaluation" = ["metrics/gpt_evaluation/config.json", "metrics/gpt_evaluation/prompt.txt"]

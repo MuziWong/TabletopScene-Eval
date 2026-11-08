@@ -1,0 +1,44 @@
+{
+  "extends": [
+    "../metrics/lpips/config.json",
+    "../metrics/dinov2/config.json",
+    "../metrics/clip/config.json",
+    "camera.json",
+    "render.json",
+    "../metrics/physical_validity/config.json",
+    "../metrics/gpt_evaluation/config.json"
+  ],
+  "visual_normalization": {
+    "enabled": true,
+    "mode": "tabletop_diameter",
+    "target_diameter_m": 1
+  },
+  "foreground": {
+    "enabled": true,
+    "include_table": true,
+    "background_rgb": [
+      255,
+      255,
+      255
+    ],
+    "mask_threshold": 127
+  },
+  "rendering": {
+    "output_dir": "../runs"
+  },
+  "metrics": {
+    "gpt_evaluation": {
+      "options": {
+        "audit_dir": "../runs/gpt_audit"
+      }
+    },
+    "input_view": {
+      "enabled": true,
+      "metrics": [
+        "LPIPS",
+        "DINOv2",
+        "CLIP"
+      ]
+    }
+  }
+}

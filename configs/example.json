@@ -1,0 +1,15 @@
+{
+  "extends": "default.json",
+  "samples": [
+    {
+      "id": "scene_001",
+      "reference": "/data/scene_001/input.png",
+      "reference_mask": "/data/scene_001/input_mask.png",
+      "methods": {
+        "AgenTable": {
+          "scene_export": "/data/scene_001/scene_export"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+# CPU baseline for Linux x86_64. GPU installation: see docs/ENVIRONMENT.md.
+# Top-level packages are pinned; this is not a full transitive lockfile.
+name: tabletopscene-eval
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - --index-url https://pypi.org/simple
+      - --extra-index-url https://download.pytorch.org/whl/cpu
+      - torch==2.7.1+cpu
+      - torchvision==0.22.1+cpu
+      - numpy==1.26.4
+      - scipy==1.15.3
+      - Pillow==11.2.1
+      - lpips==0.1.4
+      - transformers==4.51.3
+      - openai==1.78.1
+      - python-dotenv==1.2.3
+      - trimesh==4.6.8
+      - python-fcl==0.7.0.11
+      - vhacdx==0.1.1

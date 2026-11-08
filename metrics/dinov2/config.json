@@ -1,0 +1,10 @@
+{
+  "metrics": {
+    "input_view": {
+      "options": {
+        "dinov2_model": "facebook/dinov2-base",
+        "dinov2_revision": "f9e44c814b77203eaa57a6bdbbd535f21ede1415"
+      }
+    }
+  }
+}
